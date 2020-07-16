@@ -1,4 +1,4 @@
 idf_component_register(
-    SRCS "pins.cpp"
+    SRCS "elapsed_timer.cpp" "sampler.cpp"
     INCLUDE_DIRS "."
 )

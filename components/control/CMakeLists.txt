@@ -1,4 +1,5 @@
 idf_component_register(
-    SRCS "pid.cpp" "elapsed_timer.cpp"
+    SRCS "pid.cpp"
     INCLUDE_DIRS "."
+    REQUIRES utils
 )

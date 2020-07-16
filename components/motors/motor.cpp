@@ -5,29 +5,26 @@
 
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_periph.h"
-#include "pins.hpp"
 
 static const char *TAG = "Motor";
 
 const MotorConfig LEFT_MOTOR_CONFIG = {
-    pin::MOTOR_IN1,
-    pin::MOTOR_IN2,
-    pin::MOTOR_ENA,
+    (gpio_num_t)CONFIG_PIN_MOTOR_IN1,
+    (gpio_num_t)CONFIG_PIN_MOTOR_IN2,
+    (gpio_num_t)CONFIG_PIN_MOTOR_ENA,
     MCPWM_UNIT_0
 };
 
 const MotorConfig RIGHT_MOTOR_CONFIG = {
-    pin::MOTOR_IN3,
-    pin::MOTOR_IN4,
-    pin::MOTOR_ENB,
+    (gpio_num_t)CONFIG_PIN_MOTOR_IN3,
+    (gpio_num_t)CONFIG_PIN_MOTOR_IN4,
+    (gpio_num_t)CONFIG_PIN_MOTOR_ENB,
     MCPWM_UNIT_1
 };
 
 Motor::Motor(const MotorConfig& config)
     :config(config), duty_cycle(0)
 {
-    ESP_LOGD(TAG, "Creating motor");
-
     // Configure enable pin
     gpio_pad_select_gpio(config.GPIO_EN);
     gpio_set_direction(config.GPIO_EN, GPIO_MODE_OUTPUT);
@@ -67,6 +64,7 @@ void Motor::set_speed(float speed)
     }
 }
 
+
 void Motor::move_forward()
 {
     // Set the unused pwm to zero
@@ -79,7 +77,9 @@ void Motor::move_forward()
     mcpwm_set_duty_type(config.MCPWM_UNIT, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0);
 }
 
-void Motor::move_backward(){
+
+void Motor::move_backward()
+{
     // Set the unused pwm to zero
     mcpwm_set_signal_low(config.MCPWM_UNIT, MCPWM_TIMER_0, MCPWM_OPR_A);
 
@@ -90,16 +90,19 @@ void Motor::move_backward(){
     mcpwm_set_duty_type(config.MCPWM_UNIT, MCPWM_TIMER_0, MCPWM_OPR_B, MCPWM_DUTY_MODE_0);
 }
 
+
 void Motor::stop()
 {
     mcpwm_set_signal_low(config.MCPWM_UNIT, MCPWM_TIMER_0, MCPWM_OPR_A);
     mcpwm_set_signal_low(config.MCPWM_UNIT, MCPWM_TIMER_0, MCPWM_OPR_B);
 }
 
+
 void Motor::enable()
 {
     gpio_set_level(config.GPIO_EN, 1);
 }
+
 
 void Motor::disable()
 {

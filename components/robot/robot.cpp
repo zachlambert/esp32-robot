@@ -8,19 +8,13 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "esp_types.h"
-#include "pins.hpp"
+
 #include "motor.hpp"
+#include "encoder.hpp"
 
 static const char *TAG = "Robot";
 
-xQueueHandle interrupt_queue;
-
-static void IRAM_ATTR isr_handler(void *args)
-{
-    const gpio_num_t pin_number = *(const gpio_num_t *)args;
-    xQueueSendFromISR(interrupt_queue, &pin_number, NULL);
-}
-
+/*
 void robot_setup_gpio()
 {
     gpio_config_t config_digital_inputs;
@@ -50,7 +44,6 @@ void robot_setup_gpio()
     gpio_set_direction(pin::MPU_INT, GPIO_MODE_INPUT);
     gpio_set_intr_type(pin::MPU_INT, GPIO_INTR_POSEDGE);
 
-    gpio_install_isr_service(0);
     gpio_isr_handler_add(
         pin::ENCODER_LEFT, isr_handler, (void*)&pin::ENCODER_LEFT
     );
@@ -81,30 +74,25 @@ void robot_setup_i2c()
     i2c_param_config(I2C_NUM_0, &i2c_config);
     i2c_driver_install(I2C_NUM_0, i2c_config.mode, 0, 0, 0);
 }
+*/
 
 void task_robot(void *params)
 {
+    gpio_install_isr_service(0);
+
     // robot_setup_gpio();
     // robot_setup_i2c();
     ESP_LOGI(TAG, "Starting robot task");
 
     Motor left_motor = Motor(LEFT_MOTOR_CONFIG);
+    Encoder left_encoder = Encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT);
 
-    left_motor.set_speed(50);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    left_motor.set_speed(-100);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    left_motor.set_speed(0);
-
-    while (true) vTaskDelay(1000);
-
-    interrupt_queue = xQueueCreate(10, sizeof(int));
-    gpio_num_t pin_number;
     while (true) {
-        if (xQueueReceive(interrupt_queue, &pin_number, portMAX_DELAY)) {
-            switch (pin_number) {
-                default: break;
-            }
-        }
+        left_motor.set_speed(40);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "Speed: %f", left_encoder.get_speed());
+        left_motor.set_speed(90);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "Speed: %f", left_encoder.get_speed());
     }
 }

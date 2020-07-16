@@ -14,16 +14,19 @@ struct MotorConfig {
 extern const MotorConfig LEFT_MOTOR_CONFIG;
 extern const MotorConfig RIGHT_MOTOR_CONFIG;
 
+
 class Motor {
 public:
     Motor(const MotorConfig& config);
     void set_speed(float speed);
     void enable();
     void disable();
+
 private:
     void move_forward();
     void move_backward();
     void stop();
+
     const MotorConfig& config;
     float duty_cycle;
 };
