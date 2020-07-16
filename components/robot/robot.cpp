@@ -1,28 +1,24 @@
 
-#include "robot.h"
+#include "robot.hpp"
 
-#include <stdio.h>
-
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "esp_types.h"
+#include "pins.hpp"
+#include "motor.hpp"
+
+static const char *TAG = "Robot";
 
 xQueueHandle interrupt_queue;
 
 static void IRAM_ATTR isr_handler(void *args)
 {
-    int pin_number = *(int*)args;
+    const gpio_num_t pin_number = *(const gpio_num_t *)args;
     xQueueSendFromISR(interrupt_queue, &pin_number, NULL);
-}
-
-void robot_setup_interrupt_add(int pin_number)
-{
-    int *persistent = malloc(sizeof(int));
-    *persistent = pin_number;
-    gpio_isr_handler_add(*persistent, isr_handler, persistent);
 }
 
 void robot_setup_gpio()
@@ -51,27 +47,36 @@ void robot_setup_gpio()
 
     // Todo: Get the right interrupt for processing MPU data
     gpio_pad_select_gpio(CONFIG_PIN_MPU_INT);
-    gpio_set_direction(CONFIG_PIN_MPU_INT, GPIO_MODE_INPUT);
-    gpio_set_intr_type(CONFIG_PIN_MPU_INT, GPIO_INTR_POSEDGE);
+    gpio_set_direction(pin::MPU_INT, GPIO_MODE_INPUT);
+    gpio_set_intr_type(pin::MPU_INT, GPIO_INTR_POSEDGE);
 
-    interrupt_queue = xQueueCreate(10, sizeof(int));
     gpio_install_isr_service(0);
-    robot_setup_interrupt_add(CONFIG_PIN_ENCODER_LEFT);
-    robot_setup_interrupt_add(CONFIG_PIN_ENCODER_RIGHT);
-    robot_setup_interrupt_add(CONFIG_PIN_LINE_FOLLOWER_LEFT);
-    robot_setup_interrupt_add(CONFIG_PIN_LINE_FOLLOWER_RIGHT);
-    robot_setup_interrupt_add(CONFIG_PIN_MPU_INT);
+    gpio_isr_handler_add(
+        pin::ENCODER_LEFT, isr_handler, (void*)&pin::ENCODER_LEFT
+    );
+    gpio_isr_handler_add(
+        pin::ENCODER_LEFT, isr_handler, (void*)&pin::ENCODER_RIGHT
+    );
+    gpio_isr_handler_add(
+        pin::ENCODER_LEFT, isr_handler, (void*)&pin::LINE_FOLLOWER_LEFT
+    );
+    gpio_isr_handler_add(
+        pin::ENCODER_LEFT, isr_handler, (void*)&pin::LINE_FOLLOWER_RIGHT
+    );
+    gpio_isr_handler_add(
+        pin::ENCODER_LEFT, isr_handler, (void*)pin::MPU_INT
+    );
 }
 
 void robot_setup_i2c()
 {
     i2c_config_t i2c_config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = CONFIG_PIN_MPU_SDA,
-        .scl_io_num = CONFIG_PIN_MPU_SCL,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 100000
+        I2C_MODE_MASTER, //mode
+        pin::MPU_SDA, //sda_io_num
+        pin::MPU_SCL, //scl_io_num
+        GPIO_PULLUP_ENABLE, //sda_pullup_en
+        GPIO_PULLUP_ENABLE, //scl_pullup_en
+        {{100000}} // union -> struct master -> clk_speed
     };
     i2c_param_config(I2C_NUM_0, &i2c_config);
     i2c_driver_install(I2C_NUM_0, i2c_config.mode, 0, 0, 0);
@@ -79,14 +84,26 @@ void robot_setup_i2c()
 
 void task_robot(void *params)
 {
-    robot_setup_gpio();
-    robot_setup_i2c();
+    // robot_setup_gpio();
+    // robot_setup_i2c();
+    ESP_LOGI(TAG, "Starting robot task");
 
-    int pin_number;
+    Motor left_motor = Motor(LEFT_MOTOR_CONFIG);
+
+    left_motor.set_speed(50);
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    left_motor.set_speed(-100);
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    left_motor.set_speed(0);
+
+    while (true) vTaskDelay(1000);
+
+    interrupt_queue = xQueueCreate(10, sizeof(int));
+    gpio_num_t pin_number;
     while (true) {
         if (xQueueReceive(interrupt_queue, &pin_number, portMAX_DELAY)) {
             switch (pin_number) {
-
+                default: break;
             }
         }
     }

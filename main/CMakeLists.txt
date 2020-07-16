@@ -1,4 +1,7 @@
 idf_component_register(
-    SRCS "src/main.c" "src/robot.c" "src/server.c"
-    INCLUDE_DIRS "include"
+    SRCS "main.cpp"
+    INCLUDE_DIRS "."
+    REQUIRES robot server
 )
+# By default, the main component requires all components, but I'm writing
+# it explicitly to make it clear

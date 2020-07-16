@@ -1,59 +1,59 @@
 menu "Pin Configuration"
 
 config PIN_MOTOR_ENA
-    int "GPIO pin"
+    int "Motor ENA GPIO pin"
     default 1
 
 config PIN_MOTOR_IN1
-    int "GPIO pin"
+    int "Motor IN1 GPIO pin"
     default 2
 
 config PIN_MOTOR_IN2
-    int "GPIO pin"
+    int "Motor IN2 GPIO pin"
     default 3
 
 config PIN_MOTOR_ENB
-    int "GPIO pin"
+    int "Motor ENB GPIO pin"
     default 4
 
 config PIN_MOTOR_IN3
-    int "GPIO pin"
+    int "Motor IN3 GPIO pin"
     default 5
 
 config PIN_MOTOR_IN4
-    int "GPIO pin"
+    int "Motor IN4 GPIO pin"
     default 6
 
 config PIN_ENCODER_LEFT
-    int "GPIO pin"
+    int "Left encoder output GPIO pin"
     default 7
 
 config PIN_ENCODER_RIGHT
-    int "GPIO pin"
+    int "Right encoder output GPIO pin"
     default 8
 
 config PIN_LINE_FOLLOWER_LEFT
-    int "GPIO pin"
+    int "Left line follower output GPIO pin"
     default 9
 
 config PIN_LINE_FOLLOWER_RIGHT
-    int "GPIO pin"
+    int "Right line follower output GPIO pin"
     default 10
 
 config PIN_MPU_SCL
-    int "GPIO pin"
+    int "MPU I2C clock (SCL) GPIO pin"
     default  22
 
 config PIN_MPU_SDA
-    int "GPIO pin"
+    int "MPU I2C data (SDA) GPIO pin"
     default 21
 
 config PIN_MPU_INT
-    int "GPIO pin"
+    int "MPU interrupt (INT) GPIO pin"
     default 11
-    
+
 config PIN_CURRENT
-    int "ADC pin"
+    int "Current sensor output ADC pin"
     default 0
 
 endmenu
