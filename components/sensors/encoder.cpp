@@ -1,20 +1,34 @@
 #include "encoder.hpp"
 
 #include <math.h>
+#include <numeric>
+
 
 Encoder::Encoder(const gpio_num_t GPIO)
-    : GPIO(GPIO), timer(), sampler()
+    : GPIO(GPIO), timer()
 {
     gpio_pad_select_gpio(GPIO);
     gpio_set_direction(GPIO, GPIO_MODE_INPUT);
     gpio_set_intr_type(GPIO, GPIO_INTR_ANYEDGE);
-    register_interrupt(GPIO, this);
+    register_interrupt(GPIO, static_cast<HasCallback*>(this));
 }
+
+
+// Expects the speed to be sampled at regular intervals
+// with time step dt
+float Encoder::sample_speed(float dt)
+{
+    index = (index+1) % SAMPLE_SIZE;
+    unsigned int num_steps = std::accumulate(
+        count.begin(), count.end(), (unsigned int)0
+    );
+    static const float step_size = 2*M_PI / (2 * CONFIG_NUM_ENCODER_SLOTS);
+    static const float scale = step_size / (dt * (SAMPLE_SIZE-1));
+    return num_steps * scale;
+}
+
 
 void Encoder::callback()
 {
-    double dt = timer.sample_dt();
-    sampler.add(2*M_PI/(2 * CONFIG_NUM_ENCODER_SLOTS * dt));
-    // Interrupts on both edges of the slot, so get
-    // 2 * CONFIG_NUM_ENCODER_SLOTS interrupts in a revolution
+    count[index]++;
 }

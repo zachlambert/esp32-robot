@@ -2,7 +2,6 @@
 #include "robot.hpp"
 
 #include "esp_log.h"
-#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
@@ -13,6 +12,20 @@
 #include "encoder.hpp"
 
 static const char *TAG = "Robot";
+
+class Robot {
+public:
+    Robot(float dt);
+private:
+    void callback();
+    friend void robot_timer_callback(xTimerHandle timer_handle);
+
+    float dt;
+    Motor left_motor;
+    Motor right_motor;
+    Encoder left_encoder;
+    Encoder right_encoder;
+};
 
 /*
 void robot_setup_gpio()
@@ -76,23 +89,53 @@ void robot_setup_i2c()
 }
 */
 
-void task_robot(void *params)
+Robot::Robot(float dt)
+    : dt(dt),
+    left_motor(LEFT_MOTOR_CONFIG),
+    right_motor(RIGHT_MOTOR_CONFIG),
+    left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
+    right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT)
 {
+
+}
+
+
+void Robot::callback()
+{
+    left_encoder.sample_speed(dt);
+    right_encoder.sample_speed(dt);
+    // left_pid_controller.loop(left_encoder.sample_speed(dt));
+    // right_pid_controller.loop(right_encoder.sample_speed(dt));
+    // left_motor.set_speed(left_pid_controller.get_cv());
+    // right_motor.set_speed(right_pid_controller.get_cv());
+}
+
+
+Robot* robot;
+
+void robot_timer_callback(xTimerHandle timer_handle)
+{
+    robot->callback();
+}
+
+void robot_start()
+{
+    ESP_LOGI(TAG, "Starting robot");
+
+    // Must call before adding interrupts, which is done during
+    // the construction of Robot
     gpio_install_isr_service(0);
 
-    // robot_setup_gpio();
-    // robot_setup_i2c();
-    ESP_LOGI(TAG, "Starting robot task");
+    TickType_t period_ticks = 1000;
+    float period_seconds = (float)period_ticks / (portTICK_PERIOD_MS * 1000);
 
-    Motor left_motor = Motor(LEFT_MOTOR_CONFIG);
-    Encoder left_encoder = Encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT);
+    robot = new Robot(period_seconds);
 
-    while (true) {
-        left_motor.set_speed(40);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "Speed: %f", left_encoder.get_speed());
-        left_motor.set_speed(90);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "Speed: %f", left_encoder.get_speed());
-    }
+    xTimerHandle timer_handle = xTimerCreate(
+        "robot timer",
+        period_ticks,
+        true, // auto reload
+        NULL, // timer id
+        robot_timer_callback
+    );
 }
