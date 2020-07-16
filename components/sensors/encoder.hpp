@@ -8,13 +8,15 @@
 
 #include "elapsed_timer.hpp"
 #include "sampler.hpp"
+#include "interrupt_handler.hpp"
 
-class Encoder {
+class Encoder: public HasCallback {
 public:
     Encoder(const gpio_num_t GPIO);
+    ~Encoder() {}
     float get_speed()const{ return sampler.get_average(); }
 private:
-    static void callback(void *data);
+    void callback();
 
     const gpio_num_t GPIO;
     ElapsedTimer timer;
