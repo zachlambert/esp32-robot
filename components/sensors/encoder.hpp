@@ -14,8 +14,7 @@ public:
     Encoder(const gpio_num_t GPIO);
     float get_speed()const{ return sampler.get_average(); }
 private:
-    friend void task_encoder_interrupt_handler(void *params);
-    void callback();
+    static void callback(void *data);
 
     const gpio_num_t GPIO;
     ElapsedTimer timer;
