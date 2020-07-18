@@ -5,10 +5,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "elapsed_timer.hpp"
 #include "interrupt_handler.hpp"
 
+// Unecessary to use a mutex lock to handle the
+// over_line variable, since its an atomic instruction
 class LineFollower: public HasCallback {
 public:
     LineFollower(const gpio_num_t GPIO);

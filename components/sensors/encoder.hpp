@@ -12,6 +12,8 @@
 #include "interrupt_handler.hpp"
 
 
+// Don't need to use a mutex lock with the count data,
+// since it is read and written atomically
 class Encoder: public HasCallback {
 public:
     Encoder(const gpio_num_t GPIO);
@@ -23,6 +25,7 @@ private:
     static const std::size_t SAMPLE_SIZE = 10;
     std::array<unsigned int, SAMPLE_SIZE> count;
     std::size_t index;
+    unsigned int count_sum;
     const gpio_num_t GPIO;
 };
 
