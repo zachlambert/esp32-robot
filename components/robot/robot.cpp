@@ -17,8 +17,8 @@ static const char *TAG = "Robot";
 class Robot {
 public:
     Robot(float dt);
+    void loop();
 private:
-    void callback();
     friend void robot_timer_callback(xTimerHandle timer_handle);
 
     float dt;
@@ -92,6 +92,7 @@ void robot_setup_i2c()
 }
 */
 
+
 Robot::Robot(float dt)
     : dt(dt),
      left_motor(LEFT_MOTOR_CONFIG),
@@ -105,7 +106,8 @@ Robot::Robot(float dt)
     right_motor_controller.set_sp(-1100);
 }
 
-void Robot::callback()
+
+void Robot::loop()
 {
     ESP_LOGD(TAG, "Timer callback");
 
@@ -128,25 +130,34 @@ void Robot::callback()
     right_motor.set_signed_duty_cycle(right_cv);
 }
 
-Robot* robot;
 
+TaskHandle_t robot_task_handler;
 void robot_timer_callback(xTimerHandle timer_handle)
 {
-    robot->callback();
+    xTaskNotifyGive(robot_task_handler);
 }
+
+
+void robot_task(void *params)
+{
+    float period_seconds = *(float *)params;
+    gpio_install_isr_service(0);
+    Robot robot(period_seconds);
+    while (true) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        robot.loop();
+    }
+}
+
 
 void robot_start()
 {
     ESP_LOGI(TAG, "Starting robot");
 
-    // Must call before adding interrupts, which is done during
-    // the construction of Robot
-    gpio_install_isr_service(0);
-
     TickType_t period_ticks = pdMS_TO_TICKS(50);
     float period_seconds = (float)period_ticks / (portTICK_PERIOD_MS * 1000);
-
-    robot = new Robot(period_seconds);
+ 
+    xTaskCreate(robot_task, "robot", 8192, &period_seconds, 2, &robot_task_handler);
 
     xTimerHandle robot_timer = xTimerCreate(
         "robot timer",
@@ -155,6 +166,8 @@ void robot_start()
         NULL, // timer id
         robot_timer_callback
     );
-
     xTimerStart(robot_timer, 0);
+
+    int stack_memory = uxTaskGetStackHighWaterMark(NULL);
+    ESP_LOGI(TAG, "Stack available: %d", stack_memory);
 }
