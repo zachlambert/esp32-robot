@@ -9,6 +9,7 @@ public:
         kp(kp), ki(ki), kd(kd) {}
     void loop(double measured_pv);
     double get_cv()const { return cv; }
+    void set_sp(double sp){ this->sp = sp; }
 private:
     double kp, ki, kd;
     double pv; // Process variable

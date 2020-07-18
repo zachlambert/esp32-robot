@@ -2,7 +2,9 @@
 
 #include <math.h>
 #include <numeric>
+#include "esp_log.h"
 
+static const char *TAG = "Encoder";
 
 Encoder::Encoder(const gpio_num_t GPIO)
     : GPIO(GPIO), timer()
@@ -11,6 +13,7 @@ Encoder::Encoder(const gpio_num_t GPIO)
     gpio_set_direction(GPIO, GPIO_MODE_INPUT);
     gpio_set_intr_type(GPIO, GPIO_INTR_ANYEDGE);
     register_interrupt(GPIO, static_cast<HasCallback*>(this));
+    std::fill(count.begin(), count.end(), 0);
 }
 
 
@@ -19,6 +22,7 @@ Encoder::Encoder(const gpio_num_t GPIO)
 float Encoder::sample_speed(float dt)
 {
     index = (index+1) % SAMPLE_SIZE;
+    count[index] = 0;
     unsigned int num_steps = std::accumulate(
         count.begin(), count.end(), (unsigned int)0
     );

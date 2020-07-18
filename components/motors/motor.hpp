@@ -9,6 +9,7 @@ struct MotorConfig {
     const gpio_num_t GPIO_B;
     const gpio_num_t GPIO_EN;
     const mcpwm_unit_t MCPWM_UNIT;
+    const mcpwm_timer_t MCPWM_TIMER;
 };
 
 extern const MotorConfig LEFT_MOTOR_CONFIG;

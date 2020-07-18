@@ -10,6 +10,7 @@
 
 #include "motor.hpp"
 #include "encoder.hpp"
+#include "pid.hpp"
 
 static const char *TAG = "Robot";
 
@@ -25,6 +26,8 @@ private:
     Motor right_motor;
     Encoder left_encoder;
     Encoder right_encoder;
+    PidController left_motor_controller;
+    PidController right_motor_controller;
 };
 
 /*
@@ -91,25 +94,34 @@ void robot_setup_i2c()
 
 Robot::Robot(float dt)
     : dt(dt),
-    left_motor(LEFT_MOTOR_CONFIG),
-    right_motor(RIGHT_MOTOR_CONFIG),
-    left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
-    right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT)
+     left_motor(LEFT_MOTOR_CONFIG),
+     right_motor(RIGHT_MOTOR_CONFIG),
+     left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
+     right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
+     left_motor_controller(5, 0.5, 0.1),
+     right_motor_controller(5, 0.5, 0.1)
 {
-
+    // left_motor_controller.set_sp(0.15);
+    // right_motor_controller.set_sp(0.15);
+    left_motor.set_speed(50);
+    right_motor.set_speed(-70);
 }
-
 
 void Robot::callback()
 {
-    left_encoder.sample_speed(dt);
-    right_encoder.sample_speed(dt);
-    // left_pid_controller.loop(left_encoder.sample_speed(dt));
-    // right_pid_controller.loop(right_encoder.sample_speed(dt));
-    // left_motor.set_speed(left_pid_controller.get_cv());
-    // right_motor.set_speed(right_pid_controller.get_cv());
-}
+    ESP_LOGD(TAG, "Timer callback");
 
+    float left_speed = left_encoder.sample_speed(dt);
+    float right_speed = right_encoder.sample_speed(dt);
+    ESP_LOGD(TAG, "Left speed: %f", left_speed);
+    ESP_LOGD(TAG, "Right speed: %f", right_speed);
+    /*
+    left_motor_controller.loop(left_speed);
+    right_motor_controller.loop(right_speed);
+    left_motor.set_speed(left_motor_controller.get_cv());
+    right_motor.set_speed(right_motor_controller.get_cv());
+    */
+}
 
 Robot* robot;
 
@@ -126,16 +138,18 @@ void robot_start()
     // the construction of Robot
     gpio_install_isr_service(0);
 
-    TickType_t period_ticks = 1000;
+    TickType_t period_ticks = pdMS_TO_TICKS(50);
     float period_seconds = (float)period_ticks / (portTICK_PERIOD_MS * 1000);
 
     robot = new Robot(period_seconds);
 
-    xTimerHandle timer_handle = xTimerCreate(
+    xTimerHandle robot_timer = xTimerCreate(
         "robot timer",
         period_ticks,
         true, // auto reload
         NULL, // timer id
         robot_timer_callback
     );
+
+    xTimerStart(robot_timer, 0);
 }
