@@ -98,13 +98,11 @@ Robot::Robot(float dt)
      right_motor(RIGHT_MOTOR_CONFIG),
      left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
      right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
-     left_motor_controller(5, 0.5, 0.1),
-     right_motor_controller(5, 0.5, 0.1)
+     left_motor_controller(dt, 0, 5, 0),
+     right_motor_controller(dt, 0, 5, 0)
 {
-    // left_motor_controller.set_sp(0.15);
-    // right_motor_controller.set_sp(0.15);
-    left_motor.set_speed(50);
-    right_motor.set_speed(-70);
+    left_motor_controller.set_sp(900);
+    right_motor_controller.set_sp(-1100);
 }
 
 void Robot::callback()
@@ -112,15 +110,22 @@ void Robot::callback()
     ESP_LOGD(TAG, "Timer callback");
 
     float left_speed = left_encoder.sample_speed(dt);
+    float left_velocity = left_motor.is_reversed() ? -left_speed : left_speed;
     float right_speed = right_encoder.sample_speed(dt);
-    ESP_LOGD(TAG, "Left speed: %f", left_speed);
-    ESP_LOGD(TAG, "Right speed: %f", right_speed);
-    /*
-    left_motor_controller.loop(left_speed);
-    right_motor_controller.loop(right_speed);
-    left_motor.set_speed(left_motor_controller.get_cv());
-    right_motor.set_speed(right_motor_controller.get_cv());
-    */
+    float right_velocity = right_motor.is_reversed() ? -right_speed : right_speed;
+    ESP_LOGD(TAG, "Left velocity: %f", left_velocity);
+    ESP_LOGD(TAG, "Right velocity: %f", right_velocity);
+
+    left_motor_controller.loop(left_velocity);
+    right_motor_controller.loop(right_velocity);
+    double left_cv = left_motor_controller.get_cv();
+    if (left_cv > 100) left_cv = 100;
+    if (left_cv < -100) left_cv = -100;
+    double right_cv = right_motor_controller.get_cv();
+    if (right_cv > 100) right_cv = 100;
+    if (right_cv < -100) right_cv = -100;
+    left_motor.set_signed_duty_cycle(left_cv);
+    right_motor.set_signed_duty_cycle(right_cv);
 }
 
 Robot* robot;

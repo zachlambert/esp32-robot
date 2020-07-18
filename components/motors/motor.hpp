@@ -19,10 +19,10 @@ extern const MotorConfig RIGHT_MOTOR_CONFIG;
 class Motor {
 public:
     Motor(const MotorConfig& config);
-    void set_speed(float speed);
+    void set_signed_duty_cycle(float velocity);
     void enable();
     void disable();
-
+    bool is_reversed()const { return reversed; }
 private:
     void move_forward();
     void move_backward();
@@ -30,6 +30,7 @@ private:
 
     const MotorConfig& config;
     float duty_cycle;
+    bool reversed;
 };
 
 #endif

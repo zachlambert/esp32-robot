@@ -25,7 +25,7 @@ const MotorConfig RIGHT_MOTOR_CONFIG = {
 };
 
 Motor::Motor(const MotorConfig& config)
-    :config(config), duty_cycle(0)
+    :config(config), duty_cycle(0), reversed(false)
 {
     // Configure enable pin
     gpio_pad_select_gpio(config.GPIO_EN);
@@ -59,16 +59,18 @@ Motor::Motor(const MotorConfig& config)
     enable();
 }
 
-void Motor::set_speed(float speed)
+void Motor::set_signed_duty_cycle(float signed_duty_cycle)
 {
-    if (speed == 0) {
+    if (signed_duty_cycle == 0) {
         stop();
-    } else if (speed > 0) {
-        duty_cycle = speed;
+    } else if (signed_duty_cycle > 0) {
+        duty_cycle = signed_duty_cycle;
         move_forward();
+        reversed = false;
     } else {
-        duty_cycle = -speed;
+        duty_cycle = -signed_duty_cycle;
         move_backward();
+        reversed = true;
     }
 }
 
