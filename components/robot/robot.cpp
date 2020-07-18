@@ -11,6 +11,7 @@
 #include "motor.hpp"
 #include "encoder.hpp"
 #include "controllers.hpp"
+#include "line_follower.hpp"
 
 static const char *TAG = "Robot";
 
@@ -19,8 +20,6 @@ public:
     Robot(float dt);
     void update();
 private:
-    friend void robot_timer_callback(xTimerHandle timer_handle);
-
     float dt;
     Motor left_motor;
     Motor right_motor;
@@ -28,6 +27,9 @@ private:
     Encoder right_encoder;
     IntegralController left_motor_controller;
     IntegralController right_motor_controller;
+
+    LineFollower left_line_follower;
+    LineFollower right_line_follower;
 };
 
 /*
@@ -100,7 +102,11 @@ Robot::Robot(float dt)
      left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
      right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
      left_motor_controller(dt, 10, 100),
-     right_motor_controller(dt, 10, 100)
+     right_motor_controller(dt, 10, 100),
+     left_line_follower(
+        (gpio_num_t)CONFIG_PIN_LINE_FOLLOWER_LEFT),
+     right_line_follower(
+        (gpio_num_t)CONFIG_PIN_LINE_FOLLOWER_RIGHT)
 {
     left_motor_controller.set_sp(500);
     right_motor_controller.set_sp(500);
@@ -115,8 +121,6 @@ void Robot::update()
     float left_velocity = left_motor.is_reversed() ? -left_speed : left_speed;
     float right_speed = right_encoder.sample_speed(dt);
     float right_velocity = right_motor.is_reversed() ? -right_speed : right_speed;
-    ESP_LOGD(TAG, "Left velocity: %f", left_velocity);
-    ESP_LOGD(TAG, "Right velocity: %f", right_velocity);
 
     left_motor_controller.update(left_velocity);
     right_motor_controller.update(right_velocity);
@@ -128,6 +132,12 @@ void Robot::update()
     if (right_cv < -100) right_cv = -100;
     left_motor.set_signed_duty_cycle(left_cv);
     right_motor.set_signed_duty_cycle(right_cv);
+
+    ESP_LOGI(
+        TAG, "Left LF: %d | Right LF: %d",
+        left_line_follower.is_over_line(),
+        right_line_follower.is_over_line()
+    );
 }
 
 

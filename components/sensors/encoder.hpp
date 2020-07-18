@@ -11,21 +11,19 @@
 #include "elapsed_timer.hpp"
 #include "interrupt_handler.hpp"
 
-static const std::size_t SAMPLE_SIZE = 10;
 
 class Encoder: public HasCallback {
 public:
     Encoder(const gpio_num_t GPIO);
-    ~Encoder() {}
     float sample_speed(float dt);
 
 private:
     void callback();
 
+    static const std::size_t SAMPLE_SIZE = 10;
     std::array<unsigned int, SAMPLE_SIZE> count;
     std::size_t index;
     const gpio_num_t GPIO;
-    ElapsedTimer timer;
 };
 
 #endif
