@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "pid.cpp"
+    SRCS "controllers.cpp"
     INCLUDE_DIRS "."
     REQUIRES utils
 )

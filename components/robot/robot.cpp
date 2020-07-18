@@ -10,14 +10,14 @@
 
 #include "motor.hpp"
 #include "encoder.hpp"
-#include "pid.hpp"
+#include "controllers.hpp"
 
 static const char *TAG = "Robot";
 
 class Robot {
 public:
     Robot(float dt);
-    void loop();
+    void update();
 private:
     friend void robot_timer_callback(xTimerHandle timer_handle);
 
@@ -99,15 +99,15 @@ Robot::Robot(float dt)
      right_motor(RIGHT_MOTOR_CONFIG),
      left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
      right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
-     left_motor_controller(dt, 0, 5, 0),
-     right_motor_controller(dt, 0, 5, 0)
+     left_motor_controller(dt, 0, 10, 0),
+     right_motor_controller(dt, 0, 10, 0)
 {
-    left_motor_controller.set_sp(900);
-    right_motor_controller.set_sp(-1100);
+    left_motor_controller.set_sp(500);
+    right_motor_controller.set_sp(500);
 }
 
 
-void Robot::loop()
+void Robot::update()
 {
     ESP_LOGD(TAG, "Timer callback");
 
@@ -118,8 +118,8 @@ void Robot::loop()
     ESP_LOGD(TAG, "Left velocity: %f", left_velocity);
     ESP_LOGD(TAG, "Right velocity: %f", right_velocity);
 
-    left_motor_controller.loop(left_velocity);
-    right_motor_controller.loop(right_velocity);
+    left_motor_controller.update(left_velocity);
+    right_motor_controller.update(right_velocity);
     double left_cv = left_motor_controller.get_cv();
     if (left_cv > 100) left_cv = 100;
     if (left_cv < -100) left_cv = -100;
@@ -145,7 +145,7 @@ void robot_task(void *params)
     Robot robot(period_seconds);
     while (true) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        robot.loop();
+        robot.update();
     }
 }
 
