@@ -26,8 +26,8 @@ private:
     Motor right_motor;
     Encoder left_encoder;
     Encoder right_encoder;
-    PidController left_motor_controller;
-    PidController right_motor_controller;
+    IntegralController left_motor_controller;
+    IntegralController right_motor_controller;
 };
 
 /*
@@ -99,8 +99,8 @@ Robot::Robot(float dt)
      right_motor(RIGHT_MOTOR_CONFIG),
      left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
      right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
-     left_motor_controller(dt, 0, 10, 0),
-     right_motor_controller(dt, 0, 10, 0)
+     left_motor_controller(dt, 10, 100),
+     right_motor_controller(dt, 10, 100)
 {
     left_motor_controller.set_sp(500);
     right_motor_controller.set_sp(500);

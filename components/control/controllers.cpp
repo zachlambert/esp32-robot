@@ -3,6 +3,25 @@
 
 static const char *TAG = "PID";
 
+void IntegralController::update(float measured_pv)
+{
+    pv = measured_pv;
+
+    e = sp - pv;
+    kie_integral += ki * (e_prev + e)*0.5 * dt;
+
+    if (kie_limit != 0) {
+        if (kie_integral > kie_limit) {
+            kie_integral = kie_limit;
+        } else if (kie_integral < -kie_limit) {
+            kie_integral = -kie_limit;
+        }
+    }
+
+    cv = kie_integral;
+}
+
+
 void PidController::update(float measured_pv)
 {
     pv = measured_pv;
@@ -21,10 +40,4 @@ void PidController::update(float measured_pv)
     }
 
     cv = kp*e + kie_integral + kd*e_derivative;
-
-    ESP_LOGI(
-        TAG,
-        "PV: %f | E: %f | ED: %f | KIEI: %f | CV: %f",
-        pv, e, e_derivative, kie_integral, cv
-    );
 }
