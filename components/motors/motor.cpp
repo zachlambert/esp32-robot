@@ -24,8 +24,9 @@ const MotorConfig RIGHT_MOTOR_CONFIG = {
     MCPWM_TIMER_1
 };
 
+
 Motor::Motor(const MotorConfig& config)
-    :config(config), duty_cycle(0), reversed(false)
+    :config(config), duty_cycle(0), state(MotorState::STOPPED)
 {
     // Configure enable pin
     gpio_pad_select_gpio(config.GPIO_EN);
@@ -56,26 +57,36 @@ Motor::Motor(const MotorConfig& config)
     // Also pass the MCPWM unit and timer (always use config.MCPWM_UNIT)
     mcpwm_init(config.MCPWM_UNIT, config.MCPWM_TIMER, &pwm_config);
 
-    enable();
+    gpio_set_level(config.GPIO_EN, 1);
 }
 
-void Motor::set_signed_duty_cycle(float signed_duty_cycle)
+void Motor::set_duty_cycle(float duty_cycle)
 {
-    if (signed_duty_cycle == 0) {
-        stop();
-    } else if (signed_duty_cycle > 0) {
-        duty_cycle = signed_duty_cycle;
-        move_forward();
-        reversed = false;
-    } else {
-        duty_cycle = -signed_duty_cycle;
-        move_backward();
-        reversed = true;
+    this->duty_cycle = duty_cycle;
+    if (state == MotorState::FORWARD) {
+        set_forward_pwm();
+    } else if (state == MotorState::BACKWARD) {
+        set_backward_pwm();
     }
 }
 
+void Motor::move_forward() {
+    state = MotorState::FORWARD;
+    set_forward_pwm();
+}
 
-void Motor::move_forward()
+void Motor::move_backward() {
+    state = MotorState::BACKWARD;
+    set_backward_pwm();
+}
+
+void Motor::stop() {
+    state = MotorState::STOPPED;
+    disable_pwm();
+}
+
+
+void Motor::set_forward_pwm()
 {
     // Set the unused pwm to zero
     mcpwm_set_signal_low(config.MCPWM_UNIT, config.MCPWM_TIMER, MCPWM_OPR_B);
@@ -88,7 +99,7 @@ void Motor::move_forward()
 }
 
 
-void Motor::move_backward()
+void Motor::set_backward_pwm()
 {
     // Set the unused pwm to zero
     mcpwm_set_signal_low(config.MCPWM_UNIT, config.MCPWM_TIMER, MCPWM_OPR_A);
@@ -101,21 +112,8 @@ void Motor::move_backward()
 }
 
 
-void Motor::stop()
+void Motor::disable_pwm()
 {
     mcpwm_set_signal_low(config.MCPWM_UNIT, (mcpwm_timer_t)config.MCPWM_UNIT, MCPWM_OPR_A);
     mcpwm_set_signal_low(config.MCPWM_UNIT, (mcpwm_timer_t)config.MCPWM_UNIT, MCPWM_OPR_B);
 }
-
-
-void Motor::enable()
-{
-    gpio_set_level(config.GPIO_EN, 1);
-}
-
-
-void Motor::disable()
-{
-    gpio_set_level(config.GPIO_EN, 0);
-}
-

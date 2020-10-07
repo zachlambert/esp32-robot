@@ -19,6 +19,8 @@ void IntegralController::update(float measured_pv)
     }
 
     cv = kie_integral;
+
+    ESP_LOGI(TAG, "e (%f) | kiei (%f) | cv (%f)", e, kie_integral, cv);
 }
 
 

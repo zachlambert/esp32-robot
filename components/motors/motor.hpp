@@ -15,22 +15,28 @@ struct MotorConfig {
 extern const MotorConfig LEFT_MOTOR_CONFIG;
 extern const MotorConfig RIGHT_MOTOR_CONFIG;
 
+enum class MotorState {
+    STOPPED,
+    FORWARD,
+    BACKWARD
+};
 
 class Motor {
 public:
     Motor(const MotorConfig& config);
-    void set_signed_duty_cycle(float velocity);
-    void enable();
-    void disable();
-    bool is_reversed()const { return reversed; }
-private:
+    void set_duty_cycle(float velocity);
     void move_forward();
     void move_backward();
     void stop();
 
+private:
+    void set_forward_pwm();
+    void set_backward_pwm();
+    void disable_pwm();
+
     const MotorConfig& config;
     float duty_cycle;
-    bool reversed;
+    MotorState state;
 };
 
 #endif

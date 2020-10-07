@@ -1,6 +1,8 @@
 
 #include "robot.hpp"
 
+#include <cmath>
+
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -101,43 +103,65 @@ Robot::Robot(float dt)
      right_motor(RIGHT_MOTOR_CONFIG),
      left_encoder((gpio_num_t)CONFIG_PIN_ENCODER_LEFT),
      right_encoder((gpio_num_t)CONFIG_PIN_ENCODER_RIGHT),
-     left_motor_controller(dt, 10, 100),
-     right_motor_controller(dt, 10, 100),
+     left_motor_controller(dt, 0.02, 2),
+     right_motor_controller(dt, 0.02, 2),
      left_line_follower(
         (gpio_num_t)CONFIG_PIN_LINE_FOLLOWER_LEFT),
      right_line_follower(
         (gpio_num_t)CONFIG_PIN_LINE_FOLLOWER_RIGHT)
 {
-    left_motor_controller.set_sp(500);
-    right_motor_controller.set_sp(500);
+    // left_motor_controller.set_sp(400);
+    // right_motor_controller.set_sp(400);
+    left_motor.set_duty_cycle(50);
+    right_motor.set_duty_cycle(50);
 }
 
 
 void Robot::update()
 {
-    ESP_LOGD(TAG, "Timer callback");
+    if (left_line_follower.is_over_line()) {
+        if (right_line_follower.is_over_line()) {
+            // On line
+            left_motor.move_forward();
+            right_motor.move_forward();
+        } else {
+            // Off to the right
+            left_motor.move_backward();
+            right_motor.move_forward();
+        }
+    } else {
+        if (right_line_follower.is_over_line()) {
+            // Off to the left
+            left_motor.move_forward();
+            right_motor.move_backward();
+        } else {
+            // Off completely
+            left_motor.move_backward();
+            right_motor.move_backward();
+        }
+    }
 
+    /*
     float left_speed = left_encoder.sample_speed(dt);
-    float left_velocity = left_motor.is_reversed() ? -left_speed : left_speed;
     float right_speed = right_encoder.sample_speed(dt);
-    float right_velocity = right_motor.is_reversed() ? -right_speed : right_speed;
 
-    left_motor_controller.update(left_velocity);
-    right_motor_controller.update(right_velocity);
-    double left_cv = left_motor_controller.get_cv();
-    if (left_cv > 100) left_cv = 100;
-    if (left_cv < -100) left_cv = -100;
-    double right_cv = right_motor_controller.get_cv();
-    if (right_cv > 100) right_cv = 100;
-    if (right_cv < -100) right_cv = -100;
-    left_motor.set_signed_duty_cycle(left_cv);
-    right_motor.set_signed_duty_cycle(right_cv);
+    left_motor_controller.update(left_speed);
+    right_motor_controller.update(right_speed);
 
-    ESP_LOGI(
-        TAG, "Left LF: %d | Right LF: %d",
-        left_line_follower.is_over_line(),
-        right_line_follower.is_over_line()
-    );
+    double left_pwm = left_motor_controller.get_sp() * left_motor_controller.get_cv();
+    if (left_pwm > 100) left_pwm = 100;
+    if (left_pwm < 0) left_pwm = 0;
+
+    double right_pwm = right_motor_controller.get_sp() * right_motor_controller.get_cv();
+    if (right_pwm > 100) right_pwm = 100;
+    if (right_pwm < 0) right_pwm = 0;
+
+    left_motor.set_duty_cycle(left_pwm);
+    right_motor.set_duty_cycle(right_pwm);
+
+    ESP_LOGI(TAG, "[LEFT] target (%f) | vel (%f) | pwm(%f)", left_motor_controller.get_sp(), left_speed, left_pwm);
+    ESP_LOGI(TAG, "[RIGHT] target (%f) | vel (%f) | pwm(%f)", right_motor_controller.get_sp(), right_speed, right_pwm);
+    */
 }
 
 
@@ -166,7 +190,7 @@ void robot_start()
 
     TickType_t period_ticks = pdMS_TO_TICKS(50);
     float period_seconds = (float)period_ticks / (portTICK_PERIOD_MS * 1000);
- 
+
     xTaskCreate(robot_task, "robot", 8192, &period_seconds, 2, &robot_task_handler);
 
     xTimerHandle robot_timer = xTimerCreate(

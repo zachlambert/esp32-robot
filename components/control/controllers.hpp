@@ -7,6 +7,7 @@ public:
     virtual ~Controller() {}
     virtual void update(float measured_pv) = 0;
     void set_sp(float sp){ this->sp = sp; }
+    float get_sp()const{ return sp; }
     float get_cv()const{ return cv; }
 protected:
     float dt;
